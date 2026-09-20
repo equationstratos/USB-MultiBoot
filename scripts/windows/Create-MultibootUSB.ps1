@@ -17,17 +17,11 @@
 .PARAMETER SkipVentoyInstall
     Ne (ré)installe pas Ventoy ; met seulement à jour le contenu/la config.
 
-.PARAMETER DownloadUbuntu
-    Télécharge et vérifie la dernière ISO Ubuntu Desktop de la série indiquée.
-
-.PARAMETER UbuntuSeries
-    Série Ubuntu à utiliser (défaut : 24.04).
-
-.PARAMETER DownloadKali
-    Télécharge et vérifie la dernière ISO Kali Linux (live).
-
 .PARAMETER WindowsIso
     Chemin vers un ISO Windows que vous avez obtenu légalement (copié tel quel).
+    Facultatif : vous pouvez aussi glisser-déposer vos ISO vous-même dans les
+    dossiers créés sur la clé (ISOs\Windows, ISOs\Linux\Ubuntu, ISOs\Linux\Kali,
+    ISOs\macOS).
 
 .PARAMETER MacosImage
     Chemin vers une image macOS (.img) — voir docs/MACOS.md (expérimental).
@@ -36,7 +30,7 @@
     Ne pas demander confirmation (dangereux).
 
 .EXAMPLE
-    .\Create-MultibootUSB.ps1 -DiskNumber 1 -DownloadUbuntu -DownloadKali
+    .\Create-MultibootUSB.ps1 -DiskNumber 1
 #>
 [CmdletBinding()]
 param(
@@ -44,9 +38,6 @@ param(
     [switch]$Gpt,
     [switch]$SecureBoot,
     [switch]$SkipVentoyInstall,
-    [switch]$DownloadUbuntu,
-    [string]$UbuntuSeries = "24.04",
-    [switch]$DownloadKali,
     [string]$WindowsIso,
     [string]$MacosImage,
     [switch]$Yes
@@ -154,7 +145,7 @@ if (-not $driveLetter) {
 $root = "$($driveLetter):\"
 Write-Ok "Partition Ventoy montée sur $root"
 
-# --- Étape 3 : arborescence des ISO ---
+# --- Étape 3 : arborescence des ISO (à remplir vous-même) ---
 $paths = @(
     (Join-Path $root "ISOs\Windows"),
     (Join-Path $root "ISOs\Linux\Ubuntu"),
@@ -162,71 +153,24 @@ $paths = @(
     (Join-Path $root "ISOs\macOS")
 )
 foreach ($p in $paths) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
+Write-Ok "Dossiers créés sur la clé : ISOs\Windows, ISOs\Linux\Ubuntu, ISOs\Linux\Kali, ISOs\macOS"
+Write-Info "Copiez-y vos fichiers .iso (voir docs/LINUX.md, docs/WINDOWS.md, docs/MACOS.md)."
 
-function Get-VerifiedIso {
-    param(
-        [string]$IndexUrl,
-        [string]$Pattern,
-        [string]$SumsUrl,
-        [string]$DestDir
-    )
-    $index = Invoke-WebRequest -Uri $IndexUrl -UseBasicParsing
-    $matches = [regex]::Matches($index.Content, $Pattern) | ForEach-Object { $_.Value } | Sort-Object -Unique
-    if ($matches.Count -eq 0) { Fail "Aucune image trouvée avec le motif $Pattern sur $IndexUrl" }
-    $isoName = $matches[-1]
-    $isoUrl = "$IndexUrl$isoName"
-    $sums = Invoke-WebRequest -Uri $SumsUrl -UseBasicParsing
-    $line = ($sums.Content -split "`n") | Where-Object { $_ -match [regex]::Escape($isoName) } | Select-Object -First 1
-    if (-not $line) { Fail "Somme de contrôle introuvable pour $isoName" }
-    $expected = ($line -split '\s+')[0]
-
-    $dest = Join-Path $DestDir $isoName
-    Write-Info "Téléchargement : $isoUrl"
-    Invoke-WebRequest -Uri $isoUrl -OutFile $dest
-
-    $actual = (Get-FileHash -Path $dest -Algorithm SHA256).Hash
-    if ($actual.ToLower() -ne $expected.ToLower()) {
-        Remove-Item $dest -Force
-        Fail "Somme SHA256 invalide pour $isoName (attendu $expected, obtenu $actual)."
-    }
-    Write-Ok "Somme SHA256 vérifiée : $isoName"
-}
-
-# --- Étape 4 : téléchargement Ubuntu ---
-if ($DownloadUbuntu) {
-    Write-Info "Recherche de la dernière image Ubuntu Desktop ($UbuntuSeries)…"
-    Get-VerifiedIso `
-        -IndexUrl "https://releases.ubuntu.com/$UbuntuSeries/" `
-        -Pattern "ubuntu-[0-9.]+-desktop-amd64\.iso" `
-        -SumsUrl "https://releases.ubuntu.com/$UbuntuSeries/SHA256SUMS" `
-        -DestDir (Join-Path $root "ISOs\Linux\Ubuntu")
-}
-
-# --- Étape 5 : téléchargement Kali ---
-if ($DownloadKali) {
-    Write-Info "Recherche de la dernière image Kali Linux (live)…"
-    Get-VerifiedIso `
-        -IndexUrl "https://kali.download/base-images/current/" `
-        -Pattern "kali-linux-[0-9a-zA-Z.]+-live-amd64\.iso" `
-        -SumsUrl "https://kali.download/base-images/current/SHA256SUMS" `
-        -DestDir (Join-Path $root "ISOs\Linux\Kali")
-}
-
-# --- Étape 6 : ISO Windows fourni par l'utilisateur ---
+# --- Étape 4 : ISO Windows fourni par l'utilisateur (raccourci optionnel) ---
 if ($WindowsIso) {
     if (-not (Test-Path $WindowsIso)) { Fail "Fichier introuvable : $WindowsIso" }
     Write-Info "Copie de l'ISO Windows…"
     Copy-Item -Path $WindowsIso -Destination (Join-Path $root "ISOs\Windows") -Force
 }
 
-# --- Étape 7 : image macOS (expérimental) ---
+# --- Étape 5 : image macOS (expérimental, raccourci optionnel) ---
 if ($MacosImage) {
     if (-not (Test-Path $MacosImage)) { Fail "Fichier introuvable : $MacosImage" }
     Write-Warn2 "Support macOS expérimental — lisez docs/MACOS.md. Copie en cours…"
     Copy-Item -Path $MacosImage -Destination (Join-Path $root "ISOs\macOS") -Force
 }
 
-# --- Étape 8 : personnalisation GRUB2 (config Ventoy) ---
+# --- Étape 6 : personnalisation GRUB2 (config Ventoy) ---
 Write-Info "Application de la personnalisation GRUB2/Ventoy…"
 $ventoyDest = Join-Path $root "ventoy"
 New-Item -ItemType Directory -Path (Join-Path $ventoyDest "theme") -Force | Out-Null

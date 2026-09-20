@@ -6,9 +6,9 @@ Créez une clé USB multiboot permettant de **tester (live) ou d'installer** :
 - 🐧 **Linux** — Ubuntu et Kali Linux (téléchargement + vérification automatique)
 - 🍎 **macOS** — support expérimental, voir [docs/MACOS.md](docs/MACOS.md) (contraintes légales et techniques importantes)
 
-Le projet s'appuie sur [Ventoy](https://www.ventoy.net/) (GPL-3.0, non inclus dans ce dépôt — téléchargé à l'exécution) : vous copiez simplement des fichiers `.iso` sur la clé, Ventoy génère un menu de boot GRUB2 qui les détecte automatiquement. Ce dépôt ajoute :
+Le projet s'appuie sur [Ventoy](https://www.ventoy.net/) (GPL-3.0, non inclus dans ce dépôt — téléchargé à l'exécution) : les scripts installent Ventoy et créent des **dossiers dédiés par OS** sur la clé, dans lesquels **vous déposez vous-même vos fichiers `.iso`** (aucun téléchargement automatique). Ventoy génère ensuite un menu de boot GRUB2 qui les détecte automatiquement. Ce dépôt ajoute :
 
-- des scripts d'automatisation (déploiement de Ventoy, téléchargement/vérification des ISO, organisation des dossiers) ;
+- des scripts d'automatisation (déploiement de Ventoy, création de l'arborescence de dossiers, application de la config) ;
 - une **personnalisation GRUB2** (menu en vue arborescente par OS, couleurs par catégorie, thème) via les points d'extension officiels de Ventoy — sans toucher au moteur interne de Ventoy, qui reste à jour via ses propres mises à jour.
 
 ## ⚠️ Avertissements
@@ -36,22 +36,34 @@ docs/CUSTOMIZATION.md                   # Comment personnaliser davantage le men
 ### Linux
 
 ```bash
-sudo ./scripts/linux/create-multiboot-usb.sh --device /dev/sdX --download-ubuntu --download-kali
+sudo ./scripts/linux/create-multiboot-usb.sh --device /dev/sdX
 ```
 
 ### Windows (PowerShell en administrateur)
 
 ```powershell
-.\scripts\windows\Create-MultibootUSB.ps1 -DiskNumber 1 -DownloadUbuntu -DownloadKali
+.\scripts\windows\Create-MultibootUSB.ps1 -DiskNumber 1
 ```
 
 Remplacez `/dev/sdX` / `-DiskNumber` par l'identifiant réel de votre clé USB (les scripts listent les disques disponibles et demandent confirmation avant toute écriture).
 
-Ensuite :
+Le script installe Ventoy, applique la personnalisation GRUB2, puis crée sur la clé :
 
-1. Ajoutez votre ISO Windows dans `ISOs/Windows/` sur la clé (voir [docs/WINDOWS.md](docs/WINDOWS.md)).
-2. Pour macOS, lisez impérativement [docs/MACOS.md](docs/MACOS.md) avant toute tentative.
-3. Démarrez sur la clé USB (F12/F10/Échap selon le PC), sélectionnez le mode UEFI, et choisissez l'ISO dans le menu Ventoy.
+```
+ISOs/Windows/
+ISOs/Linux/Ubuntu/
+ISOs/Linux/Kali/
+ISOs/macOS/
+```
+
+Ensuite, **déposez vous-même vos fichiers `.iso`** dans le dossier correspondant (copier-coller/glisser-déposer depuis l'explorateur de fichiers) :
+
+1. Windows : votre propre ISO, obtenu légalement (voir [docs/WINDOWS.md](docs/WINDOWS.md)) → `ISOs/Windows/`.
+2. Ubuntu / Kali : téléchargez l'ISO de votre choix (voir [docs/LINUX.md](docs/LINUX.md)) → `ISOs/Linux/Ubuntu/` ou `ISOs/Linux/Kali/`.
+3. macOS : lisez impérativement [docs/MACOS.md](docs/MACOS.md) avant toute tentative → `ISOs/macOS/`.
+4. Démarrez sur la clé USB (F12/F10/Échap selon le PC), sélectionnez le mode UEFI, et choisissez l'ISO dans le menu Ventoy (regroupé par dossier/OS).
+
+Des raccourcis optionnels existent pour copier un fichier déjà présent sur votre PC en une seule commande : `--windows-iso PATH` / `-WindowsIso PATH` et `--macos-image PATH` / `-MacosImage PATH`.
 
 ## Pourquoi Ventoy plutôt qu'un GRUB2 « from scratch » ?
 

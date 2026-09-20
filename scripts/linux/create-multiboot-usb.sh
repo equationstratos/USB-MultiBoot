@@ -32,16 +32,18 @@ Options:
   --gpt                    Utilise le partitionnement GPT (défaut : MBR)
   --secure-boot            Active le support Secure Boot de Ventoy
   --skip-ventoy-install     Ne (ré)installe pas Ventoy, met seulement à jour le contenu
-  --download-ubuntu         Télécharge et vérifie la dernière ISO Ubuntu Desktop LTS
-  --ubuntu-series SERIES    Série Ubuntu à utiliser (défaut: 24.04)
-  --download-kali           Télécharge et vérifie la dernière ISO Kali Linux (live)
   --windows-iso PATH        Copie un ISO Windows fourni par vous vers ISOs/Windows/
   --macos-image PATH        Copie une image macOS (.img) — voir docs/MACOS.md (expérimental)
   --yes                     Ne pas demander confirmation (dangereux)
   -h, --help                Affiche cette aide
 
+Le script crée les dossiers ISOs/Windows, ISOs/Linux/Ubuntu, ISOs/Linux/Kali
+et ISOs/macOS sur la clé : déposez-y vous-même vos ISO (voir docs/LINUX.md,
+docs/WINDOWS.md, docs/MACOS.md). --windows-iso et --macos-image ne sont que
+des raccourcis optionnels pour copier un fichier déjà présent sur ce PC.
+
 Exemple:
-  sudo $0 --device /dev/sdb --download-ubuntu --download-kali
+  sudo $0 --device /dev/sdb
 EOF
 }
 
@@ -49,9 +51,6 @@ DEVICE=""
 USE_GPT=0
 SECURE_BOOT=0
 SKIP_INSTALL=0
-DL_UBUNTU=0
-DL_KALI=0
-UBUNTU_SERIES="24.04"
 WINDOWS_ISO=""
 MACOS_IMAGE=""
 ASSUME_YES=0
@@ -62,9 +61,6 @@ while [[ $# -gt 0 ]]; do
         --gpt) USE_GPT=1; shift ;;
         --secure-boot) SECURE_BOOT=1; shift ;;
         --skip-ventoy-install) SKIP_INSTALL=1; shift ;;
-        --download-ubuntu) DL_UBUNTU=1; shift ;;
-        --ubuntu-series) UBUNTU_SERIES="$2"; shift 2 ;;
-        --download-kali) DL_KALI=1; shift ;;
         --windows-iso) WINDOWS_ISO="$2"; shift 2 ;;
         --macos-image) MACOS_IMAGE="$2"; shift 2 ;;
         --yes) ASSUME_YES=1; shift ;;
@@ -77,7 +73,7 @@ done
 [[ -b "$DEVICE" ]] || die "$DEVICE n'est pas un périphérique bloc valide"
 
 require_root
-require_cmd curl grep sed awk sha256sum lsblk mount umount mktemp
+require_cmd curl grep lsblk mount umount mktemp
 
 # --- Sécurité : refuser un disque système ---
 ROOT_DISK="$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" 2>/dev/null || true)"
@@ -137,61 +133,29 @@ mkdir -p "$MOUNT_DIR"
 log_info "Montage de $DATA_PART…"
 mount "$DATA_PART" "$MOUNT_DIR"
 
-# --- Étape 3 : arborescence des ISO ---
+# --- Étape 3 : arborescence des ISO (à remplir vous-même) ---
 mkdir -p "$MOUNT_DIR/ISOs/Windows" \
          "$MOUNT_DIR/ISOs/Linux/Ubuntu" \
          "$MOUNT_DIR/ISOs/Linux/Kali" \
          "$MOUNT_DIR/ISOs/macOS"
+log_ok "Dossiers créés sur la clé : ISOs/Windows, ISOs/Linux/Ubuntu, ISOs/Linux/Kali, ISOs/macOS"
+log_info "Copiez-y vos fichiers .iso (voir docs/LINUX.md, docs/WINDOWS.md, docs/MACOS.md)."
 
-# --- Étape 4 : téléchargement Ubuntu ---
-if [[ "$DL_UBUNTU" -eq 1 ]]; then
-    log_info "Recherche de la dernière image Ubuntu Desktop ($UBUNTU_SERIES)…"
-    IDX="$WORK_DIR/ubuntu-index.html"
-    download "https://releases.ubuntu.com/${UBUNTU_SERIES}/" "$IDX"
-    ISO_NAME="$(grep -oE "ubuntu-[0-9.]+-desktop-amd64\.iso" "$IDX" | sort -u | tail -n1)"
-    [[ -n "$ISO_NAME" ]] || die "Aucune image Ubuntu desktop amd64 trouvée pour la série $UBUNTU_SERIES."
-    ISO_URL="https://releases.ubuntu.com/${UBUNTU_SERIES}/${ISO_NAME}"
-    SUMS="$WORK_DIR/ubuntu-SHA256SUMS"
-    download "https://releases.ubuntu.com/${UBUNTU_SERIES}/SHA256SUMS" "$SUMS"
-    EXPECTED="$(awk -v f="$ISO_NAME" '$0 ~ f {print $1}' "$SUMS" | head -n1)"
-    [[ -n "$EXPECTED" ]] || die "Somme de contrôle introuvable pour $ISO_NAME."
-    DEST="$MOUNT_DIR/ISOs/Linux/Ubuntu/$ISO_NAME"
-    download "$ISO_URL" "$DEST"
-    verify_sha256 "$DEST" "$EXPECTED"
-fi
-
-# --- Étape 5 : téléchargement Kali ---
-if [[ "$DL_KALI" -eq 1 ]]; then
-    log_info "Recherche de la dernière image Kali Linux (live)…"
-    IDX="$WORK_DIR/kali-index.html"
-    download "https://kali.download/base-images/current/" "$IDX"
-    ISO_NAME="$(grep -oE "kali-linux-[0-9a-zA-Z.]+-live-amd64\.iso" "$IDX" | sort -u | tail -n1)"
-    [[ -n "$ISO_NAME" ]] || die "Aucune image Kali live amd64 trouvée."
-    ISO_URL="https://kali.download/base-images/current/${ISO_NAME}"
-    SUMS="$WORK_DIR/kali-SHA256SUMS"
-    download "https://kali.download/base-images/current/SHA256SUMS" "$SUMS"
-    EXPECTED="$(awk -v f="$ISO_NAME" '$0 ~ f {print $1}' "$SUMS" | head -n1)"
-    [[ -n "$EXPECTED" ]] || die "Somme de contrôle introuvable pour $ISO_NAME."
-    DEST="$MOUNT_DIR/ISOs/Linux/Kali/$ISO_NAME"
-    download "$ISO_URL" "$DEST"
-    verify_sha256 "$DEST" "$EXPECTED"
-fi
-
-# --- Étape 6 : ISO Windows fourni par l'utilisateur ---
+# --- Étape 4 : ISO Windows fourni par l'utilisateur (raccourci optionnel) ---
 if [[ -n "$WINDOWS_ISO" ]]; then
     [[ -f "$WINDOWS_ISO" ]] || die "Fichier introuvable : $WINDOWS_ISO"
     log_info "Copie de l'ISO Windows…"
     cp -v "$WINDOWS_ISO" "$MOUNT_DIR/ISOs/Windows/"
 fi
 
-# --- Étape 7 : image macOS (expérimental) ---
+# --- Étape 5 : image macOS (expérimental, raccourci optionnel) ---
 if [[ -n "$MACOS_IMAGE" ]]; then
     [[ -f "$MACOS_IMAGE" ]] || die "Fichier introuvable : $MACOS_IMAGE"
     log_warn "Support macOS expérimental — lisez docs/MACOS.md. Copie en cours…"
     cp -v "$MACOS_IMAGE" "$MOUNT_DIR/ISOs/macOS/"
 fi
 
-# --- Étape 8 : personnalisation GRUB2 (config Ventoy) ---
+# --- Étape 6 : personnalisation GRUB2 (config Ventoy) ---
 log_info "Application de la personnalisation GRUB2/Ventoy…"
 mkdir -p "$MOUNT_DIR/ventoy/theme"
 cp -v "$REPO_ROOT/ventoy/ventoy.json"       "$MOUNT_DIR/ventoy/ventoy.json"
