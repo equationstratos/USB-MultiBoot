@@ -1,0 +1,28 @@
+{
+  "control": [
+    { "VTOY_TREE_VIEW_MENU_STYLE": "1" },
+    { "VTOY_DEFAULT_MENU_MODE": "0" },
+    { "VTOY_MENU_TIMEOUT": "30" },
+    { "VTOY_SECONDARY_TIMEOUT": "15" },
+    { "VTOY_LINUX_REMOUNT": "1" }
+  ],
+
+  "theme": {
+    "file": "/ventoy/theme/theme.txt",
+    "gfxmode": "1024x768"
+  },
+
+  "menu_class": [
+    { "key": "windows", "class": "cls_windows" },
+    { "key": "ubuntu",  "class": "cls_ubuntu"  },
+    { "key": "kali",    "class": "cls_kali"    },
+    { "key": "macos",   "class": "cls_macos"   }
+  ],
+
+  "menu_alias": [
+    { "image": "/ISOs/Windows/*",       "alias": "Windows - Installer / Réparer" },
+    { "image": "/ISOs/Linux/Ubuntu/*",  "alias": "Ubuntu - Essayer ou installer" },
+    { "image": "/ISOs/Linux/Kali/*",    "alias": "Kali Linux - Essayer ou installer" },
+    { "image": "/ISOs/macOS/*",         "alias": "macOS (expérimental)" }
+  ]
+}

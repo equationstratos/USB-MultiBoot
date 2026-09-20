@@ -1,0 +1,8 @@
+# Images disque / ISO téléchargées ou fournies localement pour les tests
+*.iso
+*.img
+*.wim
+
+# Artefacts d'exécution
+/tmp/
+*.log

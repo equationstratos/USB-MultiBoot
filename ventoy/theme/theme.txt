@@ -1,0 +1,37 @@
+# theme.txt — thème GRUB2 minimaliste pour USB-MultiBoot
+#
+# Volontairement sans image (aucun .png requis) pour rester fiable sur
+# n'importe quelle clé, sans dépendance à des assets supplémentaires.
+# Pour ajouter un fond d'écran/des icônes, voir docs/CUSTOMIZATION.md.
+
+title-text: "USB-MultiBoot"
+title-color: "#ffffff"
+desktop-color: "#1d2021"
+terminal-font: "Unifont Regular 16"
+
++ boot_menu {
+    left = 15%
+    top = 25%
+    width = 70%
+    height = 55%
+    item_height = 32
+    item_padding = 4
+    item_spacing = 4
+    item_font = "Unifont Regular 16"
+    item_color = "#cccccc"
+    selected_item_font = "Unifont Bold 16"
+    selected_item_color = "#ffffff"
+    icon_width = 0
+    icon_height = 0
+}
+
++ vbox {
+    top = 85%
+    left = 5%
+    width = 90%
+    + label {
+        text = "USB-MultiBoot — Flèches : naviguer | Entrée : démarrer | E : éditer"
+        color = "#888888"
+        align = "center"
+    }
+}
