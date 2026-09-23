@@ -126,8 +126,10 @@ else
     log_info "Installation de Ventoy ignorée (--skip-ventoy-install)."
 fi
 
-# --- Étape 2 : montage de la partition de données Ventoy (partition 2) ---
-DATA_PART="$(part_suffix "$DEVICE" 2)"
+# --- Étape 2 : montage de la partition de données Ventoy (partition 1 : la
+# grande partition exFAT où vont les ISO ; la partition 2/VTOYEFI ne sert
+# qu'au boot EFI et ne doit pas recevoir de fichiers) ---
+DATA_PART="$(part_suffix "$DEVICE" 1)"
 wait_for_device "$DATA_PART" 20
 mkdir -p "$MOUNT_DIR"
 log_info "Montage de $DATA_PART…"
