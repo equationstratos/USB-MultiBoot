@@ -121,7 +121,12 @@ if [[ "$SKIP_INSTALL" -ne 1 ]]; then
     [[ "$SECURE_BOOT" -eq 1 ]] && VTOY_ARGS+=(-s)
 
     log_info "Installation de Ventoy sur $DEVICE (options: ${VTOY_ARGS[*]})…"
-    "$VENTOY_DIR"/Ventoy2Disk.sh "${VTOY_ARGS[@]}" "$DEVICE"
+    if ! "$VENTOY_DIR"/Ventoy2Disk.sh "${VTOY_ARGS[@]}" "$DEVICE"; then
+        log_warn "Ventoy semble déjà installé sur $DEVICE : nouvelle tentative en mode mise à jour (-u), qui préserve vos données…"
+        VTOY_ARGS=(-u)
+        [[ "$SECURE_BOOT" -eq 1 ]] && VTOY_ARGS+=(-s)
+        "$VENTOY_DIR"/Ventoy2Disk.sh "${VTOY_ARGS[@]}" "$DEVICE" || die "Échec de l'installation/mise à jour de Ventoy sur $DEVICE."
+    fi
     log_ok "Ventoy installé."
     sleep 2
     partprobe "$DEVICE" 2>/dev/null || true
