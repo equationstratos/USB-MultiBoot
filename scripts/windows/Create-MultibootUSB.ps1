@@ -208,7 +208,7 @@ $ventoyDest = Join-Path $root "ventoy"
 New-Item -ItemType Directory -Path (Join-Path $ventoyDest "theme") -Force | Out-Null
 Copy-Item -Path (Join-Path $RepoRoot "ventoy\ventoy.json")     -Destination (Join-Path $ventoyDest "ventoy.json") -Force
 Copy-Item -Path (Join-Path $RepoRoot "ventoy\ventoy_grub.cfg") -Destination (Join-Path $ventoyDest "ventoy_grub.cfg") -Force
-Copy-Item -Path (Join-Path $RepoRoot "ventoy\theme\theme.txt") -Destination (Join-Path $ventoyDest "theme\theme.txt") -Force
+Copy-Item -Path (Join-Path $RepoRoot "ventoy\theme\*") -Destination (Join-Path $ventoyDest "theme") -Recurse -Force
 
 Cleanup
 Write-Ok "Clé USB multiboot prête sur le disque $DiskNumber ($root)."

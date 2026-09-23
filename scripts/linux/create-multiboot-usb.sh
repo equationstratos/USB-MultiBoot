@@ -197,7 +197,7 @@ log_info "Application de la personnalisation GRUB2/Ventoy…"
 mkdir -p "$MOUNT_DIR/ventoy/theme"
 cp -v "$REPO_ROOT/ventoy/ventoy.json"       "$MOUNT_DIR/ventoy/ventoy.json"
 cp -v "$REPO_ROOT/ventoy/ventoy_grub.cfg"   "$MOUNT_DIR/ventoy/ventoy_grub.cfg"
-cp -v "$REPO_ROOT/ventoy/theme/theme.txt"   "$MOUNT_DIR/ventoy/theme/theme.txt"
+cp -rv "$REPO_ROOT/ventoy/theme/." "$MOUNT_DIR/ventoy/theme/"
 
 sync
 umount "$MOUNT_DIR"

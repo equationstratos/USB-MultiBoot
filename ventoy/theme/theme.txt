@@ -1,8 +1,13 @@
-# theme.txt — thème GRUB2 minimaliste pour USB-MultiBoot
+# theme.txt — thème GRUB2 pour USB-MultiBoot
 #
-# Volontairement sans image (aucun .png requis) pour rester fiable sur
-# n'importe quelle clé, sans dépendance à des assets supplémentaires.
-# Pour ajouter un fond d'écran/des icônes, voir docs/CUSTOMIZATION.md.
+# select_*.png (dans ce même dossier) : neuf petites images unies (générées,
+# pas de dépendance externe) formant la barre de surbrillance cyan derrière
+# l'entrée sélectionnée — c'est le mécanisme réel utilisé par le thème par
+# défaut de Ventoy lui-même (selected_item_pixmap_style). Un simple contraste
+# de couleur de texte, sans cette image de fond, reste quasi invisible à
+# l'écran sur du vrai matériel : c'est ce qui manquait dans la version
+# précédente. Pour changer la couleur, régénérez ces PNG (voir
+# docs/CUSTOMIZATION.md) ou remplacez-les par vos propres images 9-patch.
 
 title-text: "USB-MultiBoot"
 title-color: "#ffffff"
@@ -18,12 +23,11 @@ terminal-font: "Unifont Regular 16"
     item_padding = 4
     item_spacing = 4
     item_font = "Unifont Regular 16"
-    # Contraste volontairement fort : gris terne (non sélectionné) vs cyan
-    # vif (sélectionné) — un simple ton sur ton (gris clair/blanc) ne se
-    # voit quasiment pas à l'écran, d'où l'absence de "couleur" constatée.
-    item_color = "#6f7679"
+    item_color = "#cfd4d6"
     selected_item_font = "Unifont Bold 16"
-    selected_item_color = "#5ff2f2"
+    # Texte sombre : lisible sur la barre de surbrillance cyan claire ci-dessous.
+    selected_item_color = "#0c1010"
+    selected_item_pixmap_style = "select_*.png"
     icon_width = 0
     icon_height = 0
 }

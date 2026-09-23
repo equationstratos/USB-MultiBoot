@@ -15,7 +15,7 @@ Ces trois fichiers sont fournis dans ce dépôt sous `ventoy/` et copiés sur la
 - **Vue arborescente** (`VTOY_TREE_VIEW_MENU_STYLE`) : le menu regroupe automatiquement les ISO par dossier (`ISOs/Windows`, `ISOs/Linux/Ubuntu`, `ISOs/Linux/Kali`, `ISOs/macOS`) plutôt que d'afficher une liste plate.
 - **Alias de menu** (`menu_alias`) : des libellés lisibles (« Ubuntu - Essayer ou installer », etc.) plutôt que le nom brut du fichier ISO.
 - **Classes de menu** (`menu_class`) : chaque OS reçoit une classe CSS-like (`cls_windows`, `cls_ubuntu`, `cls_kali`, `cls_macos`) exploitable pour du style avancé.
-- **Thème** (`theme.txt`) : polices, couleurs, disposition du cadre de menu — volontairement sans image pour rester fiable sans assets supplémentaires.
+- **Thème** (`theme.txt` + `theme/select_*.png`) : polices, couleurs, disposition du cadre de menu, et une barre de surbrillance cyan derrière l'entrée sélectionnée (mécanisme `selected_item_pixmap_style`, le même que celui du thème par défaut de Ventoy). Les images sont de simples PNG unis générés par script, sans dépendance externe.
 - **Timeouts et couleurs de secours** (`ventoy_grub.cfg`) : délai du menu, couleurs en mode texte si le thème graphique ne charge pas.
 
 ## Aller plus loin
