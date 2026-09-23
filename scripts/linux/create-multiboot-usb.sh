@@ -140,19 +140,25 @@ log_info "Montage de $DATA_PART…"
 mount "$DATA_PART" "$MOUNT_DIR"
 
 # --- Nettoyage défensif : une ancienne version de ce script (avant
-# correction) a pu écrire par erreur le dossier ventoy/ (config, thème)
-# sur la partition 2 (VTOYEFI) au lieu de la partition 1. Ventoy refuse
-# de démarrer correctement tant que ce résidu traîne là-bas, donc on le
-# supprime systématiquement s'il existe. ---
+# correction) a pu écrire par erreur nos propres fichiers de config/thème
+# dans le dossier ventoy/ de la partition 2 (VTOYEFI) au lieu de la
+# partition 1. Ce dossier contient AUSSI les fichiers système propres à
+# Ventoy (ventoy.cpio, ventoy.disksig, ventoy_efi.cfg, …) : on ne supprime
+# donc JAMAIS le dossier entier, uniquement les fichiers/dossiers précis
+# que ce projet a pu y déposer par erreur. ---
 EFI_PART="$(part_suffix "$DEVICE" 2)"
 if [[ -b "$EFI_PART" ]]; then
     mkdir -p "$EFI_MOUNT_DIR"
     if mount "$EFI_PART" "$EFI_MOUNT_DIR" 2>/dev/null; then
-        if [[ -d "$EFI_MOUNT_DIR/ventoy" ]]; then
-            log_warn "Résidu ventoy/ trouvé sur $EFI_PART (VTOYEFI) : suppression…"
-            rm -rf "$EFI_MOUNT_DIR/ventoy"
-            sync
-        fi
+        REMOVED_RESIDUE=0
+        for residue in "ventoy/ventoy.json" "ventoy/ventoy_grub.cfg" "ventoy/theme"; do
+            if [[ -e "$EFI_MOUNT_DIR/$residue" ]]; then
+                log_warn "Résidu $residue trouvé sur $EFI_PART (VTOYEFI) : suppression…"
+                rm -rf "${EFI_MOUNT_DIR:?}/$residue"
+                REMOVED_RESIDUE=1
+            fi
+        done
+        [[ "$REMOVED_RESIDUE" -eq 1 ]] && sync
         umount "$EFI_MOUNT_DIR"
     else
         log_warn "Impossible de vérifier $EFI_PART (VTOYEFI) pour un résidu ventoy/ ; à vérifier manuellement si besoin."

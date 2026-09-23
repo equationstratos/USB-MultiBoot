@@ -145,9 +145,12 @@ if (-not $driveLetter) {
 $root = "$($driveLetter):\"
 Write-Ok "Partition Ventoy montée sur $root"
 
-# --- Nettoyage défensif : un résidu ventoy/ écrit par erreur sur la
-# partition VTOYEFI (boot EFI, ne doit jamais contenir de fichiers) fait
-# échouer le démarrage de Ventoy. On le supprime s'il existe. ---
+# --- Nettoyage défensif : une ancienne version de ce script a pu écrire
+# par erreur nos propres fichiers de config/thème dans le dossier ventoy\
+# de la partition VTOYEFI. Ce dossier contient AUSSI les fichiers système
+# propres à Ventoy (ventoy.cpio, ventoy.disksig, ventoy_efi.cfg, …) : on
+# ne supprime donc JAMAIS le dossier entier, uniquement les fichiers/
+# dossiers précis que ce projet a pu y déposer par erreur. ---
 $efiVolume = Get-Partition -DiskNumber $DiskNumber -ErrorAction SilentlyContinue |
     Get-Volume -ErrorAction SilentlyContinue |
     Where-Object { $_.FileSystemLabel -eq "VTOYEFI" } |
@@ -160,10 +163,16 @@ if ($efiVolume) {
             Get-Partition | Select-Object -ExpandProperty DriveLetter)
     }
     if ($efiDriveLetter) {
-        $efiVentoyDir = "$($efiDriveLetter):\ventoy"
-        if (Test-Path $efiVentoyDir) {
-            Write-Warn2 "Résidu ventoy\ trouvé sur la partition VTOYEFI : suppression…"
-            Remove-Item -Path $efiVentoyDir -Recurse -Force
+        $efiResiduePaths = @(
+            "$($efiDriveLetter):\ventoy\ventoy.json",
+            "$($efiDriveLetter):\ventoy\ventoy_grub.cfg",
+            "$($efiDriveLetter):\ventoy\theme"
+        )
+        foreach ($p in $efiResiduePaths) {
+            if (Test-Path $p) {
+                Write-Warn2 "Résidu $p trouvé sur la partition VTOYEFI : suppression…"
+                Remove-Item -Path $p -Recurse -Force
+            }
         }
     }
 }
