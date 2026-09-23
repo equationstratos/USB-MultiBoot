@@ -14,11 +14,15 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 WORK_DIR="$(mktemp -d /tmp/usb-multiboot.XXXXXX)"
 MOUNT_DIR="$WORK_DIR/mnt"
+EFI_MOUNT_DIR="$WORK_DIR/efi"
 trap 'cleanup' EXIT
 
 cleanup() {
     if mountpoint -q "$MOUNT_DIR" 2>/dev/null; then
         umount "$MOUNT_DIR" 2>/dev/null || true
+    fi
+    if mountpoint -q "$EFI_MOUNT_DIR" 2>/dev/null; then
+        umount "$EFI_MOUNT_DIR" 2>/dev/null || true
     fi
     rm -rf "$WORK_DIR"
 }
@@ -134,6 +138,26 @@ wait_for_device "$DATA_PART" 20
 mkdir -p "$MOUNT_DIR"
 log_info "Montage de $DATA_PART…"
 mount "$DATA_PART" "$MOUNT_DIR"
+
+# --- Nettoyage défensif : une ancienne version de ce script (avant
+# correction) a pu écrire par erreur le dossier ventoy/ (config, thème)
+# sur la partition 2 (VTOYEFI) au lieu de la partition 1. Ventoy refuse
+# de démarrer correctement tant que ce résidu traîne là-bas, donc on le
+# supprime systématiquement s'il existe. ---
+EFI_PART="$(part_suffix "$DEVICE" 2)"
+if [[ -b "$EFI_PART" ]]; then
+    mkdir -p "$EFI_MOUNT_DIR"
+    if mount "$EFI_PART" "$EFI_MOUNT_DIR" 2>/dev/null; then
+        if [[ -d "$EFI_MOUNT_DIR/ventoy" ]]; then
+            log_warn "Résidu ventoy/ trouvé sur $EFI_PART (VTOYEFI) : suppression…"
+            rm -rf "$EFI_MOUNT_DIR/ventoy"
+            sync
+        fi
+        umount "$EFI_MOUNT_DIR"
+    else
+        log_warn "Impossible de vérifier $EFI_PART (VTOYEFI) pour un résidu ventoy/ ; à vérifier manuellement si besoin."
+    fi
+fi
 
 # --- Étape 3 : arborescence des ISO (à remplir vous-même) ---
 mkdir -p "$MOUNT_DIR/ISOs/Windows" \

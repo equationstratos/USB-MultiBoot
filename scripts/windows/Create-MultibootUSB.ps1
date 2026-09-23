@@ -145,6 +145,29 @@ if (-not $driveLetter) {
 $root = "$($driveLetter):\"
 Write-Ok "Partition Ventoy montée sur $root"
 
+# --- Nettoyage défensif : un résidu ventoy/ écrit par erreur sur la
+# partition VTOYEFI (boot EFI, ne doit jamais contenir de fichiers) fait
+# échouer le démarrage de Ventoy. On le supprime s'il existe. ---
+$efiVolume = Get-Partition -DiskNumber $DiskNumber -ErrorAction SilentlyContinue |
+    Get-Volume -ErrorAction SilentlyContinue |
+    Where-Object { $_.FileSystemLabel -eq "VTOYEFI" } |
+    Select-Object -First 1
+if ($efiVolume) {
+    $efiDriveLetter = $efiVolume.DriveLetter
+    if (-not $efiDriveLetter) {
+        $efiPart = Get-Partition -DiskNumber $DiskNumber | Where-Object { $_.Size -eq $efiVolume.Size }
+        $efiDriveLetter = (Add-PartitionAccessPath -DiskNumber $DiskNumber -PartitionNumber $efiPart.PartitionNumber -AssignDriveLetter -PassThru |
+            Get-Partition | Select-Object -ExpandProperty DriveLetter)
+    }
+    if ($efiDriveLetter) {
+        $efiVentoyDir = "$($efiDriveLetter):\ventoy"
+        if (Test-Path $efiVentoyDir) {
+            Write-Warn2 "Résidu ventoy\ trouvé sur la partition VTOYEFI : suppression…"
+            Remove-Item -Path $efiVentoyDir -Recurse -Force
+        }
+    }
+}
+
 # --- Étape 3 : arborescence des ISO (à remplir vous-même) ---
 $paths = @(
     (Join-Path $root "ISOs\Windows"),
